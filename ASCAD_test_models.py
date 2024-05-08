@@ -261,11 +261,14 @@ def check_model(model_file, ascad_database, num_traces=2000, target_byte=2, mult
 	# Load model
 	model = load_sca_model(model_file)
 	# Get the input layer shape
-	input_layer_shape = model.get_layer(index=0).input_shape[0]
-	if isinstance(model.get_layer(index=0).input_shape, list):
-		input_layer_shape = model.get_layer(index=0).input_shape[0]
+	first_layer = model.layers[0]
+	# Check if there's an input layer directly handling inputs:
+	if isinstance(first_layer, tf.keras.layers.InputLayer):
+		input_layer_shape = first_layer.output_shape
 	else:
-		input_layer_shape = model.get_layer(index=0).input_shape
+		input_layer_shape = model.input_shape
+		if isinstance(input_layer_shape, list):
+			input_layer_shape = input_layer_shape[0]
 	# Sanity check
 	if input_layer_shape[1] != len(X_attack[0, :]):
 		print("Error: model input shape %d instead of %d is not expected ..." % (input_layer_shape[1], len(X_attack[0, :])))
@@ -351,19 +354,19 @@ def read_parameters_from_file(param_filename):
 if __name__ == "__main__":
 	if len(sys.argv)!=2:
 		#default parameters values
-		model_file="ATMEGA_AES_v1/ATM_AES_v1_fixed_key/ASCAD_data/ASCAD_trained_models/cnn_best_ascad_desync0_epochs75_classes256_batchsize200.h5"
-		ascad_database=traces_file="ATMEGA_AES_v1/ATM_AES_v1_fixed_key/ASCAD_data/ASCAD_databases/ASCAD.h5"
-		num_traces=2000
-		target_byte=2
-		multilabel=0
-		simulated_key=0
+		model_file = "ATMEGA_AES_v1/ATM_AES_v1_fixed_key/ASCAD_data/ASCAD_trained_models/my_mlp_best_desync0_epochs75_batchsize200.keras"
+		ascad_database = traces_file = "ATMEGA_AES_v1/ATM_AES_v1_fixed_key/ASCAD_data/ASCAD_databases/ASCAD.h5"
+		num_traces = 5000
+		target_byte = 2
+		multilabel = 0
+		simulated_key = 0
+		save_file = "performance_mlp.png"
 	else:
 		#get parameters from user input
-		model_file, ascad_database, num_traces, target_byte, multilabel, simulated_key, save_file  = read_parameters_from_file(sys.argv[1])
+		model_file, ascad_database, num_traces, target_byte, multilabel, simulated_key, save_file = read_parameters_from_file(sys.argv[1])
 
 	#check model
 	check_model(model_file, ascad_database, num_traces, target_byte, multilabel, simulated_key, save_file)
-
 
 	try:
 		input("Press enter to exit ...")

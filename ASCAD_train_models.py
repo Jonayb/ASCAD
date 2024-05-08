@@ -29,7 +29,7 @@ def mlp_best(node=200,layer_nb=6,input_dim=1400):
 	for i in range(layer_nb-2):
 		model.add(Dense(node, activation='relu'))
 	model.add(Dense(256, activation='softmax'))
-	optimizer = RMSprop(lr=0.00001)
+	optimizer = RMSprop(learning_rate=0.00001)
 	model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 	return model
 
@@ -62,7 +62,7 @@ def cnn_best(classes=256,input_dim=700):
 	inputs = img_input
 	# Create model.
 	model = Model(inputs, x, name='cnn_best')
-	optimizer = RMSprop(lr=0.00001)
+	optimizer = RMSprop(learning_rate=0.00001)
 	model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 	return model
 
@@ -95,7 +95,7 @@ def cnn_best2(classes=256,input_dim=1400):
 	inputs = img_input
 	# Create model.
 	model = Model(inputs, x, name='cnn_best2')
-	optimizer = RMSprop(lr=0.00001)
+	optimizer = RMSprop(learning_rate=0.00001)
 	model.compile(loss='categorical_crossentropy', optimizer=optimizer, metrics=['accuracy'])
 	return model
 
@@ -290,10 +290,14 @@ def train_model(X_profiling, Y_profiling, model, save_file_name, epochs=150, bat
 			validation_split=0.1
 		callbacks.append(EarlyStopping(monitor="val_loss", patience=10, restore_best_weights=True))
 	# Get the input layer shape
-	if isinstance(model.get_layer(index=0).input_shape, list):
-		input_layer_shape = model.get_layer(index=0).input_shape[0]
+	first_layer = model.layers[0]
+	# Check if there's an input layer directly handling inputs:
+	if isinstance(first_layer, tf.keras.layers.InputLayer):
+		input_layer_shape = model.inputs[0].shape
 	else:
-		input_layer_shape = model.get_layer(index=0).input_shape
+		input_layer_shape = model.input_shape
+		if isinstance(input_layer_shape, list):
+			input_layer_shape = input_layer_shape[0]
 	# Sanity check
 	if input_layer_shape[1] != len(X_profiling[0]):
 		print("Error: model input shape %d instead of %d is not expected ..." % (input_layer_shape[1], len(X_profiling[0])))
@@ -347,15 +351,15 @@ def read_parameters_from_file(param_filename):
 
 if __name__ == "__main__":
 	if len(sys.argv)!=2:
-		#default parameters values
+		# Default parameters values
 		ascad_database = "ATMEGA_AES_v1/ATM_AES_v1_fixed_key/ASCAD_data/ASCAD_databases/ASCAD.h5"
-		#MLP training
-		network_type = "mlp"
-		training_model = "ATMEGA_AES_v1/ATM_AES_v1_fixed_key/ASCAD_data/ASCAD_trained_models/my_mlp_best_desync0_epochs75_batchsize200.h5"
+		# MLP training
+		# network_type = "mlp"
+		# training_model = "ATMEGA_AES_v1/ATM_AES_v1_fixed_key/ASCAD_data/ASCAD_trained_models/my_mlp_best_desync0_epochs75_batchsize200.keras"
 
-		#CNN training
-		#network_type = "cnn"
-		#training_model = "ATMEGA_AES_v1/ATM_AES_v1_fixed_key/ASCAD_data/ASCAD_trained_models/my_cnn_best_desync0_epochs75_batchsize200.h5"
+		# CNN training
+		network_type = "cnn"
+		training_model = "ATMEGA_AES_v1/ATM_AES_v1_fixed_key/ASCAD_data/ASCAD_trained_models/my_cnn_best_desync0_epochs75_batchsize200.keras"
 
 		#CNN training
 		#network_type = "cnn2"
@@ -366,6 +370,7 @@ if __name__ == "__main__":
 		epochs = 75
 		batch_size = 200
 		bugfix = 0
+		early_stopping = 0
 	else:
 		#get parameters from user input
 		ascad_database, training_model, network_type, epochs, batch_size, train_len, validation_split, multilabel, early_stopping = read_parameters_from_file(sys.argv[1])
